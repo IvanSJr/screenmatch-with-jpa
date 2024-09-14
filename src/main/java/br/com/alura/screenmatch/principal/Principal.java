@@ -1,75 +1,89 @@
 package br.com.alura.screenmatch.principal;
 
-import br.com.alura.screenmatch.model.DadosSerie;
-import br.com.alura.screenmatch.model.DadosTemporada;
-import br.com.alura.screenmatch.model.Episodio;
-import br.com.alura.screenmatch.service.ConsumoApi;
-import br.com.alura.screenmatch.service.ConverteDados;
+import br.com.alura.screenmatch.model.Series;
+import br.com.alura.screenmatch.model.SeriesData;
+import br.com.alura.screenmatch.model.SeasonData;
+import br.com.alura.screenmatch.service.APIConsumerService;
+import br.com.alura.screenmatch.service.DataConverterService;
 
 import java.util.ArrayList;
-import java.util.DoubleSummaryStatistics;
+import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.Scanner;
-import java.util.stream.Collectors;
 
 public class Principal {
 
-    private Scanner leitura = new Scanner(System.in);
-    private ConsumoApi consumo = new ConsumoApi();
-    private ConverteDados conversor = new ConverteDados();
-    private final String ENDERECO = "https://www.omdbapi.com/?t=";
-    private final String API_KEY = "&apikey=6585022c";
+    private final String API_URL = "https://www.omdbapi.com/?t=";
+    private static final String API_KEY_VALUE = System.getenv("API_KEY_VALUE");
+    private final Scanner scanner = new Scanner(System.in);
+    private final APIConsumerService apiConsumerService = new APIConsumerService();
+    private final DataConverterService dataConverterService = new DataConverterService();
+    private final List<SeriesData> seriesDataList = new ArrayList<>();
 
-    public void exibeMenu() {
-        var menu = """
+    public void showMenu() {
+        var option = -1;
+        while(option != 0) {
+            var menu = """
                 1 - Buscar séries
                 2 - Buscar episódios
-                
+                3 - Listar séries buscadas
                 0 - Sair                                 
                 """;
 
-        System.out.println(menu);
-        var opcao = leitura.nextInt();
-        leitura.nextLine();
+            System.out.println(menu);
+            option = scanner.nextInt();
+            scanner.nextLine();
 
-        switch (opcao) {
-            case 1:
-                buscarSerieWeb();
-                break;
-            case 2:
-                buscarEpisodioPorSerie();
-                break;
-            case 0:
-                System.out.println("Saindo...");
-                break;
-            default:
-                System.out.println("Opção inválida");
+            switch (option) {
+                case 1:
+                    findSeries();
+                    break;
+                case 2:
+                    findEpisodesToSeries();
+                    break;
+                case 3:
+                    listAllSeriesFound();
+                    break;
+                case 0:
+                    System.out.println("Saindo...");
+                    break;
+                default:
+                    System.out.println("Opção inválida");
+            }
         }
     }
 
-    private void buscarSerieWeb() {
-        DadosSerie dados = getDadosSerie();
-        System.out.println(dados);
+    private void listAllSeriesFound() {
+        List<Series> series = seriesDataList.stream().map(Series::new).toList();
+        series.stream().sorted(
+            Comparator.comparing(Series::getGenre)
+        ).forEach(
+            System.out::println
+        );
     }
 
-    private DadosSerie getDadosSerie() {
+    private void findSeries() {
+        SeriesData seriesData = getDataSerie();
+        seriesDataList.add(seriesData);
+        System.out.println(seriesData);
+    }
+
+    private SeriesData getDataSerie() {
         System.out.println("Digite o nome da série para busca");
-        var nomeSerie = leitura.nextLine();
-        var json = consumo.obterDados(ENDERECO + nomeSerie.replace(" ", "+") + API_KEY);
-        DadosSerie dados = conversor.obterDados(json, DadosSerie.class);
-        return dados;
+        var name = scanner.nextLine();
+        var json = apiConsumerService.getData(API_URL + name.replace(" ", "+") + API_KEY_VALUE);
+        return dataConverterService.obterDados(json, SeriesData.class);
     }
 
-    private void buscarEpisodioPorSerie(){
-        DadosSerie dadosSerie = getDadosSerie();
-        List<DadosTemporada> temporadas = new ArrayList<>();
+    private void findEpisodesToSeries(){
+        SeriesData seriesData = getDataSerie();
+        List<SeasonData> seasons = new ArrayList<>();
 
-        for (int i = 1; i <= dadosSerie.totalTemporadas(); i++) {
-            var json = consumo.obterDados(ENDERECO + dadosSerie.titulo().replace(" ", "+") + "&season=" + i + API_KEY);
-            DadosTemporada dadosTemporada = conversor.obterDados(json, DadosTemporada.class);
-            temporadas.add(dadosTemporada);
+        for (int i = 1; i <= seriesData.totalSeasons(); i++) {
+            var json = apiConsumerService.getData(API_URL + seriesData.title().replace(" ", "+") + "&season=" + i + API_KEY_VALUE);
+            SeasonData seasonData = dataConverterService.obterDados(json, SeasonData.class);
+            seasons.add(seasonData);
         }
-        temporadas.forEach(System.out::println);
+        seasons.forEach(System.out::println);
     }
 }
