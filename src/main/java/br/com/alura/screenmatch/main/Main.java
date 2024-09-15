@@ -1,4 +1,4 @@
-package br.com.alura.screenmatch.principal;
+package br.com.alura.screenmatch.main;
 
 import br.com.alura.screenmatch.model.Series;
 import br.com.alura.screenmatch.model.SeriesData;
@@ -11,7 +11,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Scanner;
 
-public class Principal {
+public class Main {
 
     private final String API_URL = "https://www.omdbapi.com/?t=";
     private static final String API_KEY_VALUE = System.getenv("API_KEY_VALUE");
