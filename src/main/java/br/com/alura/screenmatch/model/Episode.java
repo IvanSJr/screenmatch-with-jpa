@@ -1,14 +1,39 @@
 package br.com.alura.screenmatch.model;
 
+import jakarta.persistence.*;
+
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 
+@Entity
+@Table(name = "tb_episodes")
 public class Episode {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
     private Integer season;
     private String title;
     private Integer number;
     private Double imdbRating;
     private LocalDate releaseDate;
+
+    @ManyToOne
+    private Series series;
+
+    public Episode() {
+    }
+
+    public Episode(Long id, Integer season, String title, Integer number, Double imdbRating,
+                   LocalDate releaseDate, Series series) {
+        this.id = id;
+        this.season = season;
+        this.title = title;
+        this.number = number;
+        this.imdbRating = imdbRating;
+        this.releaseDate = releaseDate;
+        this.series = series;
+    }
 
     public Episode(Integer season, EpisodeData episodeData) {
         this.season = season;
@@ -26,6 +51,14 @@ public class Episode {
         } catch (DateTimeParseException ex) {
             this.releaseDate = null;
         }
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
     }
 
     public Integer getSeason() {
@@ -68,12 +101,23 @@ public class Episode {
         this.releaseDate = releaseDate;
     }
 
+    public Series getSeries() {
+        return series;
+    }
+
+    public void setSeries(Series series) {
+        this.series = series;
+    }
+
     @Override
     public String toString() {
-        return "season=" + season +
+        return "Episode{" +
+                "id=" + id +
+                ", season=" + season +
                 ", title='" + title + '\'' +
                 ", number=" + number +
                 ", imdbRating=" + imdbRating +
-                ", releaseDate=" + releaseDate;
+                ", releaseDate=" + releaseDate +
+                '}';
     }
 }

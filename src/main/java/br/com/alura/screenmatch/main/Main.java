@@ -1,16 +1,17 @@
 package br.com.alura.screenmatch.main;
 
+import br.com.alura.screenmatch.model.Episode;
+import br.com.alura.screenmatch.model.SeasonData;
 import br.com.alura.screenmatch.model.Series;
 import br.com.alura.screenmatch.model.SeriesData;
-import br.com.alura.screenmatch.model.SeasonData;
+import br.com.alura.screenmatch.repository.SeriesRepository;
 import br.com.alura.screenmatch.service.APIConsumerService;
 import br.com.alura.screenmatch.service.DataConverterService;
+import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
 
+@Component
 public class Main {
 
     private final String API_URL = "https://www.omdbapi.com/?t=";
@@ -18,7 +19,13 @@ public class Main {
     private final Scanner scanner = new Scanner(System.in);
     private final APIConsumerService apiConsumerService = new APIConsumerService();
     private final DataConverterService dataConverterService = new DataConverterService();
-    private final List<SeriesData> seriesDataList = new ArrayList<>();
+    private final SeriesRepository seriesRepository;
+
+    private List<Series> seriesFound = new ArrayList<>();
+
+    public Main(SeriesRepository seriesRepository) {
+        this.seriesRepository = seriesRepository;
+    }
 
     public void showMenu() {
         var option = -1;
@@ -54,8 +61,8 @@ public class Main {
     }
 
     private void listAllSeriesFound() {
-        List<Series> series = seriesDataList.stream().map(Series::new).toList();
-        series.stream().sorted(
+        this.seriesFound = seriesRepository.findAll();
+        seriesFound.stream().sorted(
             Comparator.comparing(Series::getGenre)
         ).forEach(
             System.out::println
@@ -64,7 +71,7 @@ public class Main {
 
     private void findSeries() {
         SeriesData seriesData = getDataSerie();
-        seriesDataList.add(seriesData);
+        seriesRepository.save(new Series(seriesData));
         System.out.println(seriesData);
     }
 
@@ -76,14 +83,32 @@ public class Main {
     }
 
     private void findEpisodesToSeries(){
-        SeriesData seriesData = getDataSerie();
-        List<SeasonData> seasons = new ArrayList<>();
+        this.listAllSeriesFound();
+        System.out.println("\nEscolha uma serie pelo nome: ");
+        var seriesName = scanner.nextLine();
 
-        for (int i = 1; i <= seriesData.totalSeasons(); i++) {
-            var json = apiConsumerService.getData(API_URL + seriesData.title().replace(" ", "+") + "&season=" + i + API_KEY_VALUE);
-            SeasonData seasonData = dataConverterService.obterDados(json, SeasonData.class);
-            seasons.add(seasonData);
+        Optional<Series> optionalSeriesFound = this.seriesFound.stream().filter(
+                series -> series.getTitle().toLowerCase().contains(seriesName.toLowerCase())
+        ).findFirst();
+        if (optionalSeriesFound.isPresent()) {
+            var series = optionalSeriesFound.get();
+            List<SeasonData> seasons = new ArrayList<>();
+
+            for (int i = 1; i <= series.getTotalSeasons(); i++) {
+                var json = apiConsumerService.getData(API_URL + series.getTitle().replace(" ", "+") + "&season=" + i + API_KEY_VALUE);
+                SeasonData seasonData = dataConverterService.obterDados(json, SeasonData.class);
+                seasons.add(seasonData);
+            }
+
+            List<Episode> episodes = seasons.stream().flatMap(
+                season -> season.listEpisodes().stream().map(
+                    episode -> new Episode(episode.episode(), episode)
+                )
+            ).toList();
+            series.setEpisodes(episodes);
+            seriesRepository.save(series);
+        } else {
+            System.out.println("Série não encontrada!");
         }
-        seasons.forEach(System.out::println);
     }
 }
