@@ -43,6 +43,7 @@ public class Main {
                 8 - Buscar séries por temporadas máxima e IMDB mínimo
                 9 - Buscar episódios por trecho
                 10 - Buscar top 5 episódios por série
+                11 - Buscar episódios por série e ano limite
                 0 - Sair
                 """;
 
@@ -65,6 +66,7 @@ public class Main {
                 case 8 -> findSeriesByTotalSeasonsAndImdbRating();
                 case 9 -> findAllEpisodesByText();
                 case 10 -> findTopFiveEpisodesToSeries();
+                case 11 -> findEpisodesByReleasedDateToSeries();
                 case 0 -> System.out.println("Saindo...");
                 default -> System.out.println("Opção inválida");
             }
@@ -163,6 +165,22 @@ public class Main {
                 System.out.println("Não temos episódios cadastrados");
             } else {
                 List<Episode> topFiveEpisodesToSeries = seriesRepository.findTopFiveEpsToSeries(series);
+                topFiveEpisodesToSeries.forEach(Main::printOutEpisodesAllData);
+            }
+        }
+    }
+
+    private void findEpisodesByReleasedDateToSeries() {
+        findSeriesByTitle();
+        if (this.foundSeries.isPresent()) {
+            Series series = this.foundSeries.get();
+            if (series.getEpisodes().isEmpty()) {
+                System.out.println("Não temos episódios cadastrados");
+            } else {
+                System.out.println("Digite o ano limite de busca: ");
+                var releaseDateYearLimit = scanner.nextInt();
+                scanner.nextLine();
+                List<Episode> topFiveEpisodesToSeries = seriesRepository.findEpsToSeriesByReleasedDate(series, releaseDateYearLimit);
                 topFiveEpisodesToSeries.forEach(Main::printOutEpisodesAllData);
             }
         }
