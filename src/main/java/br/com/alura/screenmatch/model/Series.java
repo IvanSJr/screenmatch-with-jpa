@@ -29,6 +29,8 @@ public class Series {
 
     private String actors;
     private String poster;
+
+    @Column(name = "summary", length = 2048)
     private String summary;
 
     @OneToMany(mappedBy = "series", fetch = FetchType.EAGER, cascade = CascadeType.ALL)
