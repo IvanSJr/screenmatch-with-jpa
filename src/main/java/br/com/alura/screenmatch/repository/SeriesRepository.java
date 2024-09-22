@@ -34,6 +34,11 @@ public interface SeriesRepository extends JpaRepository<Series, Long> {
     List<Episode> findTopFiveEpsToSeries(Series series);
 
     @Query(
+            value = "SELECT e FROM Series s JOIN s.episodes e WHERE s.id = :id ORDER BY e.imdbRating DESC LIMIT 5"
+    )
+    List<Episode> findTopFiveEpsToSeries(Long id);
+
+    @Query(
             value = "SELECT " +
                     "e " +
                     "FROM Series s " +
